@@ -9,6 +9,12 @@
         rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
         crossorigin="anonymous">
     </head>
+    <script>
+        // Update the count down every 1 second
+        var x = setInterval(function() {
+            window.location.replace("/lobby/{{ lobbyNum }}");
+        }, 1000);
+    </script>
   <body class="d-flex h-100 text-center text-muted bg-dark">
         
     <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
@@ -19,16 +25,9 @@
     </header>
 
     <main class="px-3">
-        <form action='/' method="POST">
-            <p>Enter your group's lobby number here:</p>
-            <input type="text"  id="lobbyNum" name="lobbyNum"/>
-            <button type="submit" class="btn btn-secondary">Join Lobby</button>
-            </form>
-        <h3>Or,</h3>
-        <form action="/" method="POST">
-            <button type="submit" class="btn btn-secondary">Start New Lobby</button>
-            <input type="hidden" id="lobbyNum" name="lobbyNum" value="false">
-        </form>
+        <h3>Lobby #{{ lobbyNum }}</h3>
+        <h4>Number in Lobby: {{ personCount }}</h4>
+        <a href="/lobby/{{ lobbyNum }}?ready=True" class="btn btn-secondary">Ready!</a>
     </main>
 
     <footer class="mt-auto text-white-50">
