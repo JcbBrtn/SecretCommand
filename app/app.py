@@ -1,4 +1,4 @@
-from flask import render_template, Flask, request, redirect, session
+from flask import render_template, Flask, request, redirect, session, jsonify
 from flask_session import Session
 import random
 
@@ -42,43 +42,54 @@ def disconnect(lobbyNum):
 @app.route('/lobby/<lobbyNum>', methods=['GET', 'POST'])
 def lobby(lobbyNum):
     global lobbies
-    if lobbyNum not in lobbies.keys():
-        #Check to see if this is a new lobby
-        lobbies[lobbyNum] = lob()
-        print('Created a new session')
 
-    try:
-        id = session['id']
-        print(f'Session {id} is in lobby #{lobbyNum}')
-    except:
+    if request.method == 'GET':
+        if lobbyNum not in lobbies.keys():
+            lobbies[lobbyNum] = lob()
+            print('Created a new session')
+
         session['id'] = lobbies[lobbyNum].give_num()
-        id = session['id']
         print('Gave this session a new lobby num')
 
-    if id not in lobbies[lobbyNum].lobby:
         lobbies[lobbyNum].lobby.append(session['id'])
 
-    if lobbies[lobbyNum].isReady:
-        return redirect('/game/' + str(lobbyNum))
-
-    isReady = bool(request.args.get('ready'))
-    if isReady:
-        #This would be the first instance of a player being ready. So assign the commander here
-        lobbies[lobbyNum].isReady = True
-        commanderID = random.choice(lobbies[lobbyNum].lobby)
-        lobbies[lobbyNum].commandID = commanderID
-        return redirect('/game/' + str(lobbyNum))
-
-    else:
         personCount=len(lobbies[lobbyNum].lobby)
+
         return render_template('lobby.html', lobbyNum=lobbyNum, personCount=personCount)
+
+    elif request.method == 'POST':
+
+        if lobbies[lobbyNum].isReady:
+            #This will be the auto redirect if we are ready, so people are not triggering a new command id to be made when they're ready
+            personCount=len(lobbies[lobbyNum].lobby)
+            
+            payload = {
+            'ready': lobbies[lobbyNum].isReady,
+            'person_count': personCount
+            }
+            return jsonify(payload)
+
+        else:
+            data = request.get_json()
+            if data[0]['isReady']:
+                #This is triggered by the first person to say "Ready"
+                #Thus, we choose the commandID here.
+                lobbies[lobbyNum].commandID = random.choice(lobbies[lobbyNum].lobby)
+                lobbies[lobbyNum].isReady = True
+
+            personCount=len(lobbies[lobbyNum].lobby)
+            payload = {
+                'ready': lobbies[lobbyNum].isReady,
+                'person_count': personCount
+            }
+            return jsonify(payload)
+
 
 @app.route('/game/<lobbyNum>', methods=['GET', 'POST'])
 def game(lobbyNum):
-    if lobbies[lobbyNum].commandID == session['id']:
-        return '<h1>You get a command</h1>'
-    else:
-        return '<h1>no command for you</h1>'
+    isCommand = lobbies[lobbyNum].commandID == session['id']
+
+    return render_template('game.html', isCommand=isCommand, lobbyNum=lobbyNum)
 
 if __name__ == "__main__":
     app.run()
