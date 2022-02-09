@@ -8,16 +8,66 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
         rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
         crossorigin="anonymous">
-    </head>
-  <body class="d-flex h-100 text-center text-muted bg-dark">    
-    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
-        {% if isCommand %}
-        <h1>You get a Command</h1>
-        {% else %}
-        <h1>no command for you</h1>
-        {% endif %}
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            function hideScreen() {
+                var e = document.getElementById("initScreen");
+                e.hidden=true;
+            }
 
-        <a href="/lobby/{{ lobbyNum }}" class="btn">Return to Lobby</a>
+            setInterval(function(){
+                lobbyNum = document.getElementById('lobbyNum').innerText;
+                game_url = '/game/' + lobbyNum;
+
+                var payload = [
+                {"Hey!": "Just play the game, no cheating!"}
+            ]
+
+                $.ajax({
+                type: "POST",
+                url: game_url,
+                data: JSON.stringify(payload),
+                contentType: "application/json",
+                dataType : "json",
+                success : function(result) {
+                    t = result.timer;
+                    document.getElementById('counter').innerText = t;
+                    sessionID = parseInt(document.getElementById('sessionID').innerText);
+
+                    s = result.switch;
+                    if(s){
+                        window.location.replace('/game/' + lobbyNum);
+                    }
+                }
+                });
+            }, 1000)
+        </script>
+    </head>
+  <body class="h-100 text-center text-muted bg-dark">    
+    <div id="initScreen" class="container">
+        <div class="row">
+            {% if isCommand %}
+            <h1>Shhh... Keep this command a secret.</h1>
+            <h5>Try to {{ command }} without anyone noticing you do it!</h5>
+
+            {% else %}
+            <h1>Watch out!</h1>
+            <h5>Someone in your group got a secret command. Try to figure it out and copy it before the time runs out. Don't be the last one to figure it out.</h5>
+            {% endif %}
+        </div>
+        <div class="row">
+            <h2>Make sure to hide this screen before you lay your phone down.</h2>
+        </div>
     </div>
+        <div class="row">
+            <h3 class="btn" onclick="hideScreen()">Hide Screen.</h3>
+        </div>
+    </div>
+    <h3>There are</h3>
+    <h4 id="counter">60</h4>
+    <h3>Seconds remaining for this round</h3>
+    <p hidden="true" id="lobbyNum">{{ lobbyNum }}</p>
+    <p hidden="true" id="sessionID">{{ sessionID }}</p>
+    <a href="/lobby/{{ lobbyNum }}" class="btn">Return to Lobby</a>
     </body>
 </html>

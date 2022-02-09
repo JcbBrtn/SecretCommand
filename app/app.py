@@ -1,6 +1,7 @@
 from flask import render_template, Flask, request, redirect, session, jsonify
 from flask_session import Session
 import random
+import datetime
 
 app = Flask(__name__)
 app.config["SESSION_TYPE"] = "filesystem"
@@ -18,6 +19,10 @@ class lob:
     def give_num(self):
         self.sesCount += 1
         return self.sesCount - 1
+    def reset(self):
+        self.isReady = False
+        self.lobby=[]
+        self.sesCount = 0
 
 def get_new_lobby_num():
     return len(lobbies.keys())
@@ -55,7 +60,7 @@ def lobby(lobbyNum):
 
         personCount=len(lobbies[lobbyNum].lobby)
 
-        return render_template('lobby.html', lobbyNum=lobbyNum, personCount=personCount)
+        return render_template('lobby.html', lobbyNum=lobbyNum, personCount=personCount, sesID=session['id'])
 
     elif request.method == 'POST':
 
@@ -75,6 +80,7 @@ def lobby(lobbyNum):
                 #This is triggered by the first person to say "Ready"
                 #Thus, we choose the commandID here.
                 lobbies[lobbyNum].commandID = random.choice(lobbies[lobbyNum].lobby)
+                lobbies[lobbyNum].endTime = datetime.datetime.now() + datetime.timedelta(minutes=1)
                 lobbies[lobbyNum].isReady = True
 
             personCount=len(lobbies[lobbyNum].lobby)
@@ -87,9 +93,40 @@ def lobby(lobbyNum):
 
 @app.route('/game/<lobbyNum>', methods=['GET', 'POST'])
 def game(lobbyNum):
-    isCommand = lobbies[lobbyNum].commandID == session['id']
+    if request.method == 'GET':
+        sessionID=request.args['s']
+        isCommand = str(lobbies[lobbyNum].commandID) == str(sessionID)
+        command = ""
+        lobbies[lobbyNum].switch = True
 
-    return render_template('game.html', isCommand=isCommand, lobbyNum=lobbyNum)
+        if isCommand:
+            #Get Command here
+            command = random.choice([
+                'Keep a finger pointed up for the round',
+                'Stand up',
+                'Give someone a high five',
+                'Give someone the finger guns',
+                'Act like you are rowing a canue',
+            ])
+
+        return render_template('game.html', isCommand=isCommand, lobbyNum=lobbyNum, sesID=sessionID, command=command)
+
+    elif request.method == 'POST':
+        t = lobbies[lobbyNum].endTime - datetime.datetime.now()
+        secs = int(t.total_seconds())
+
+        if (secs <= 0) and (lobbies[lobbyNum].switch):
+            lobbies[lobbyNum].switch = False
+            lobbies[lobbyNum].commandID = random.choice(lobbies[lobbyNum].lobby)
+            lobbies[lobbyNum].endTime = datetime.datetime.now() + datetime.timedelta(minutes=1)
+            lobbies[lobbyNum].isReady = True
+        
+        payload = {
+            'timer' : secs,
+            'switch': not lobbies[lobbyNum].switch
+        }
+
+        return jsonify(payload)
 
 if __name__ == "__main__":
     app.run()

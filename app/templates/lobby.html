@@ -19,6 +19,7 @@
             var lobbynum = parseInt(document.getElementById("lobbynum").innerText);
             var person_count = parseInt(document.getElementById("person_count").innerText);
             var isReadyValue = document.getElementById("isReady").innerText;
+            var sessionID = document.getElementById("sessionID").innerText
             var isReady = false;
 
             if (isReadyValue == "Ready!"){
@@ -39,7 +40,7 @@
                 dataType : "json",
                 success : function(result) {
                     if(result.ready){
-                        game_url = "/game/" + lobbynum;
+                        game_url = "/game/" + lobbynum + "?s=" + sessionID;
                         window.location.replace(game_url);
                     } else {
                         newNum = result.person_count;
@@ -60,6 +61,7 @@
     </header>
 
     <main class="px-3">
+        <p id="sessionID" hidden="true">{{ sesID }}</p>
         <h3>Lobby:</h3>
         <h4 id="lobbynum">{{ lobbyNum }}</h4>
         <h4>Number of players in the lobby:</h4>
